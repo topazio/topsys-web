@@ -7,14 +7,16 @@ import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import br.com.topsys.base.exception.TSApplicationException;
+import br.com.topsys.base.util.TSType;
 import br.com.topsys.web.exception.TSRestResponseException;
+import br.com.topsys.web.faces.TSMainFaces;
+import lombok.extern.slf4j.Slf4j;
 
-
-
+@Slf4j
 @Component
 public class TSRestAPI<T extends Serializable> {
 
-	
 	private String baseURL;
 
 	public String getBaseURL() {
@@ -23,27 +25,30 @@ public class TSRestAPI<T extends Serializable> {
 
 	private RestTemplate restTemplate = null;
 
-	public TSRestAPI() {
-
-		this.restTemplate = new RestTemplate();
-		this.restTemplate.setErrorHandler(new TSRestResponseException());
-
-	} 
 	
 	public TSRestAPI(String baseURL) {
-        this.baseURL = baseURL; 
+		this.baseURL = baseURL;
 		this.restTemplate = new RestTemplate();
 		this.restTemplate.setErrorHandler(new TSRestResponseException());
 
 	}
 
 	public T postReturnObject(Class<T> classe, String url, T object) {
-		
+
 		T retorno = null;
 
-		HttpEntity<T> entity = new HttpEntity<T>(object);
+		HttpEntity<T> entity = null;
 
-		retorno = (T) restTemplate.postForObject(this.getBaseURL() + url, entity, classe);
+		try {
+			entity = new HttpEntity<T>(object);
+			
+			retorno = (T) restTemplate.postForObject(this.getBaseURL() + url, entity, classe);
+			
+			TSMainFaces.addInfoMessage("Operação realizada com sucesso!");
+
+		} catch (RuntimeException e) {
+			this.handlerException(e);
+		}
 
 		return retorno;
 	}
@@ -53,9 +58,16 @@ public class TSRestAPI<T extends Serializable> {
 
 		List<T> retorno = null;
 
-		HttpEntity<T> entity = new HttpEntity<T>(object);
+		HttpEntity<T> entity = null;
 
-		retorno = restTemplate.postForObject(this.getBaseURL() + url, entity, List.class);
+		try {
+			entity = new HttpEntity<T>(object);
+
+			retorno = restTemplate.postForObject(this.getBaseURL() + url, entity, List.class);
+
+		} catch (RuntimeException e) {
+			this.handlerException(e);
+		}
 
 		return retorno;
 
@@ -64,6 +76,30 @@ public class TSRestAPI<T extends Serializable> {
 	public List<T> postReturnList(String url) {
 
 		return this.postReturnList(url, null);
+
+	}
+
+	private void handlerException(RuntimeException e) {
+		if (e instanceof TSApplicationException) {
+
+			TSApplicationException tsApplicationException = (TSApplicationException) e;
+
+			if (tsApplicationException.getTSType().equals(TSType.BUSINESS)) {
+
+				TSMainFaces.addInfoMessage(e.getMessage());
+
+			} else {
+
+				TSMainFaces.addErrorMessage(e.getMessage());
+			}
+
+		} else {
+
+			log.error(e.getMessage());
+
+			TSMainFaces.addErrorMessage(e.getMessage());
+
+		}
 
 	}
 

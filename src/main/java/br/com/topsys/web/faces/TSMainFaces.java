@@ -15,24 +15,22 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.beanutils.BeanUtils;
 import org.springframework.stereotype.Component;
 
-import br.com.topsys.base.exception.TSApplicationException;
-import br.com.topsys.base.exception.TSSystemException;
-import br.com.topsys.base.util.TSType;
 import br.com.topsys.base.util.TSUtil;
 import br.com.topsys.web.util.TSRestAPI;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 public abstract class TSMainFaces<T extends Serializable> {
-	  
-	 
+
 	private String baseURL;
- 
+
 	private T model;
-	 
+
 	protected String getBaseURL() {
 		return this.baseURL;
 	}
-	
+
 	protected void setBaseURL(String baseURL) {
 		this.baseURL = baseURL;
 	}
@@ -44,44 +42,15 @@ public abstract class TSMainFaces<T extends Serializable> {
 	public void setModel(T model) {
 		this.model = model;
 	}
-	
 
 	protected T postReturnObject(Class<T> classe, String url, T objeto) {
-		T retorno = null;
 
-		try {
-			retorno = (T) new TSRestAPI<T>(this.baseURL).postReturnObject(classe,url, objeto);
-
-			this.addInfoMessage("Operação realizada com sucesso!");
-
-		} catch (TSApplicationException e) {
-
-			handlerException(e);
-
-		} catch (TSSystemException e) {
-			this.addErrorMessage(e.getMessage());
-		}
-
-		return retorno;
+		return (T) new TSRestAPI<T>(this.baseURL).postReturnObject(classe, url, objeto);
 	}
 
 	protected List<T> postReturnList(String url, T object) {
 
-		List<T> retorno = null;
-
-		try {
-
-			retorno = new TSRestAPI<T>(this.baseURL).postReturnList(url, object);
-
-		} catch (TSApplicationException e) {
-
-			handlerException(e);
-
-		} catch (TSSystemException e) {
-			this.addErrorMessage(e.getMessage());
-		}
-
-		return retorno;
+		return new TSRestAPI<T>(this.baseURL).postReturnList(url, object);
 
 	}
 
@@ -91,15 +60,8 @@ public abstract class TSMainFaces<T extends Serializable> {
 
 	}
 
-	private void handlerException(TSApplicationException e) {
-		if (e.getTSType().equals(TSType.ERROR)) {    
-			this.addErrorMessage(e.getMessage());
-		} else {
-			this.addInfoMessage(e.getMessage());
-		}
-	}
-
-	protected List<SelectItem> initCombo(List coll, String nomeValue, String nomeLabel) {
+	@SuppressWarnings("static-access")
+	protected List<SelectItem> initCombo(List<?> coll, String nomeValue, String nomeLabel) {
 		List<SelectItem> list = new ArrayList<SelectItem>();
 
 		for (Object o : coll) {
@@ -108,10 +70,9 @@ public abstract class TSMainFaces<T extends Serializable> {
 				list.add(new SelectItem(BeanUtils.getProperty(o, nomeValue), BeanUtils.getProperty(o, nomeLabel)));
 
 			} catch (Exception e) {
+				log.error(e.getMessage());
 
-				e.printStackTrace();
-
-				throw new TSSystemException(e);
+				this.addErrorMessage(e.getMessage());
 			}
 		}
 		return list;
@@ -156,11 +117,11 @@ public abstract class TSMainFaces<T extends Serializable> {
 
 	}
 
-	protected void addInfoMessage(String msg) {
+	public static void addInfoMessage(String msg) {
 		addInfoMessage(null, msg);
 	}
 
-	protected void addInfoMessage(String clientId, String msg) {
+	protected static void addInfoMessage(String clientId, String msg) {
 		FacesContext.getCurrentInstance().addMessage(clientId, new FacesMessage(FacesMessage.SEVERITY_INFO, null, msg));
 	}
 
@@ -176,11 +137,11 @@ public abstract class TSMainFaces<T extends Serializable> {
 		return FacesContext.getCurrentInstance();
 	}
 
-	protected void addErrorMessage(String msg) {
+	public static void addErrorMessage(String msg) {
 		addErrorMessage(null, msg);
 	}
 
-	protected void addErrorMessage(String clientId, String msg) {
+	protected static void addErrorMessage(String clientId, String msg) {
 		FacesContext.getCurrentInstance().addMessage(clientId,
 				new FacesMessage(FacesMessage.SEVERITY_ERROR, null, msg));
 	}
@@ -198,7 +159,7 @@ public abstract class TSMainFaces<T extends Serializable> {
 			if (TSUtil.isEmpty(destino)) {
 				addInfoMessage(destino, msg_nenhuma_ocorrencia);
 			} else {
-				addInfoMessage(msg_nenhuma_ocorrencia); 
+				addInfoMessage(msg_nenhuma_ocorrencia);
 			}
 
 		} else {
@@ -234,7 +195,7 @@ public abstract class TSMainFaces<T extends Serializable> {
 				}
 
 			}
- 
+
 		}
 
 		return donaBenta;

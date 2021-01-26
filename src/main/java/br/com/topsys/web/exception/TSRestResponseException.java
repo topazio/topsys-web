@@ -46,14 +46,18 @@ public class TSRestResponseException implements ResponseErrorHandler {
 		String body = toString(response.getBody());
 		ObjectMapper mapper = new ObjectMapper();
 		TSResponseExceptionModel model = mapper.readValue(body, TSResponseExceptionModel.class);
-
-		log.error("URL: {}, HttpMethod: {}, ResponseBody: {}", url, method, body);
-
+		
+		String ERROR_LOG = "URL: {}, HttpMethod: {}, ResponseBody: {}";
+		
 		if (model.getCodigo() == HttpStatus.INTERNAL_SERVER_ERROR.value()) {
-
+            
+			log.error(ERROR_LOG, url, method, body);
+			
 			throw new TSSystemException(model.getMensagem());
 
 		}else if(model.getCodigo() == HttpStatus.BAD_REQUEST.value()) {
+			
+			log.error(ERROR_LOG, url, method, body);
 			
 			throw new TSApplicationException(model.getMensagem(),TSType.ERROR);
 		}
